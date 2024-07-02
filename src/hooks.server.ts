@@ -29,17 +29,20 @@ export async function handle({ event, resolve }) {
 }
 
 /** @type {import('@sveltejs/kit').HandleServerError} */
-export async function handleError({ status, message }) {
+export async function handleError({ error }) {
     const errorId = crypto.randomUUID()
 
-    return { message: `[/hooks.server.ts|${errorId}] Error ${status} - ${message}` }
+    return { message: `[/hooks.server.ts|${errorId}] ${error}` }
 }
 
 /** @type {import('@sveltejs/kit').HandleFetch} */
 export async function handleFetch({ request, fetch }) {
     if (request.url.startsWith('http://starter-kit-svelte')) {
         request = new Request(
-            request.url.replace('http://starter-kit-svelte', `http://${HOST}${PORT != null ? ':' : ''}${PORT}`),
+            request.url.replace(
+                'http://starter-kit-svelte',
+                `http://${HOST}${PORT != null ? ':' : ''}${PORT}`
+            ),
             request
         )
     }

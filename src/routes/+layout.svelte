@@ -1,7 +1,5 @@
-<script lang="ts">
-    import Container from '$lib/component/Container.svelte'
+<script>
+    import './+layout.css'
 </script>
 
-<Container id="/+layout.svelte" expanded>
-    <slot />
-</Container>
+<slot />
