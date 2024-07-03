@@ -39,6 +39,12 @@
 }
 
 .indicator-bar .timer-clock {
+    @apply flex;
+    @apply flex-row;
+    @apply gap-4;
+}
+
+.indicator-bar .timer-clock > .timer-digit {
     @apply bg-neutral;
     @apply rounded-box;
 
@@ -50,6 +56,11 @@
 
     @apply flex;
     @apply flex-col;
+}
+
+.indicator-bar .timer-clock > .timer-digit.exceed {
+    @apply bg-base-300;
+    @apply text-error;
 }
 
 .area-table {

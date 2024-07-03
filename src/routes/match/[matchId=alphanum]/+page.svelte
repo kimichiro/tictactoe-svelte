@@ -82,42 +82,49 @@
         }
     })
 
-    $: state = $gameStore.state
+    $: area = $gameStore.state.area
+    $: players = $gameStore.state.players
+    $: currentTurn = $gameStore.state.currentTurn
+    $: result = $gameStore.state.result
+
+    $: currentPlayer = players.find(({ id }) => id === userSessionId)
 
     $: indicatorTitle = ' '
-    $: indicatorCountdown = 0
+    $: timerMinutes = currentPlayer?.remainingTime.minutes ?? 0
+    $: timerSeconds = currentPlayer?.remainingTime.seconds ?? 0
 
-    $: playerEx = state.players.find(({ role }) => role === Role.Ex)
-    $: playerOh = state.players.find(({ role }) => role === Role.Oh)
+    $: playerEx = players.find(({ role }) => role === Role.Ex)
+    $: playerOh = players.find(({ role }) => role === Role.Oh)
 
-    $: currentPlayer = state.currentTurn
+    $: cellA1Mark = area.table[Position.A1] ?? ' '
+    $: cellB1Mark = area.table[Position.B1] ?? ' '
+    $: cellC1Mark = area.table[Position.C1] ?? ' '
+    $: cellA2Mark = area.table[Position.A2] ?? ' '
+    $: cellB2Mark = area.table[Position.B2] ?? ' '
+    $: cellC2Mark = area.table[Position.C2] ?? ' '
+    $: cellA3Mark = area.table[Position.A3] ?? ' '
+    $: cellB3Mark = area.table[Position.B3] ?? ' '
+    $: cellC3Mark = area.table[Position.C3] ?? ' '
 
-    $: cellA1Mark = state.area.table[Position.A1] ?? ' '
-    $: cellB1Mark = state.area.table[Position.B1] ?? ' '
-    $: cellC1Mark = state.area.table[Position.C1] ?? ' '
-    $: cellA2Mark = state.area.table[Position.A2] ?? ' '
-    $: cellB2Mark = state.area.table[Position.B2] ?? ' '
-    $: cellC2Mark = state.area.table[Position.C2] ?? ' '
-    $: cellA3Mark = state.area.table[Position.A3] ?? ' '
-    $: cellB3Mark = state.area.table[Position.B3] ?? ' '
-    $: cellC3Mark = state.area.table[Position.C3] ?? ' '
-
-    $: isGameEnded = state.result?.draw != null || state.result?.winner != null
+    $: isYourTurn = currentTurn?.id != null && currentTurn.id === userSessionId
+    $: isGameEnded = result?.draw != null || result?.winner != null
 
     $: {
         userSessionId = $gameStore.sessionId
 
+        isYourTurn = currentTurn?.id != null && currentTurn.id === userSessionId
+
         indicatorTitle = ' '
-        if (currentPlayer?.id != null && userSessionId != null) {
-            if (currentPlayer.id === userSessionId) {
+        if (currentTurn?.id != null && userSessionId != null) {
+            if (currentTurn.id === userSessionId) {
                 indicatorTitle = `Your Turn!`
             } else {
                 indicatorTitle = `Opponent's Turn!`
             }
-        } else if (state.result?.draw === true) {
+        } else if (result?.draw === true) {
             indicatorTitle = `Draw!`
-        } else if (state.result?.winner?.id != null && userSessionId != null) {
-            if (state.result.winner.id === userSessionId) {
+        } else if (result?.winner?.id != null && userSessionId != null) {
+            if (result.winner.id === userSessionId) {
                 indicatorTitle = `You Won!`
             } else {
                 indicatorTitle = `You Lose!`
@@ -145,11 +152,21 @@
 
     <div class="component-container">
         <div class="indicator-bar">
-            <div class="timer-clock">
-                <span class="countdown text-5xl">
-                    <span class="flex-initial" style={`--value:${indicatorCountdown};`}></span>
-                </span>
-                sec
+            <div class="timer-clock" class:invisible={!isYourTurn} class:opacity-0={!isYourTurn}>
+                <div class="timer-digit" class:exceed={timerSeconds < 0}>
+                    <span class="countdown text-5xl">
+                        <span class="flex-initial" style={`--value:${Math.abs(timerMinutes)};`}
+                        ></span>
+                    </span>
+                    min
+                </div>
+                <div class="timer-digit" class:exceed={timerSeconds < 0}>
+                    <span class="countdown text-5xl">
+                        <span class="flex-initial" style={`--value:${Math.abs(timerSeconds)};`}
+                        ></span>
+                    </span>
+                    sec
+                </div>
             </div>
             <article class="prose lg:prose-xl">
                 <h1>{indicatorTitle}</h1>
@@ -257,7 +274,7 @@
         <div class="score-board">
             <div
                 class="player-card"
-                class:current-turn={playerEx != null && playerEx?.id === currentPlayer?.id}
+                class:current-turn={playerEx != null && playerEx?.id === currentTurn?.id}
                 class:me={playerEx?.id === userSessionId}
             >
                 <div class="player-label">
@@ -268,7 +285,7 @@
             <div class="divider divider-horizontal">VS</div>
             <div
                 class="player-card"
-                class:current-turn={playerOh != null && playerOh?.id === currentPlayer?.id}
+                class:current-turn={playerOh != null && playerOh?.id === currentTurn?.id}
                 class:me={playerOh?.id === userSessionId}
             >
                 <div class="player-label">

@@ -31,10 +31,16 @@ export interface Connection {
     readonly status: ConnectionStatus
 }
 
+export interface TimeDuration {
+    readonly minutes: number
+    readonly seconds: number
+}
+
 export interface GamePlayer {
     readonly id: string
     readonly name: string
     readonly connection: Connection
+    readonly remainingTime: TimeDuration
 
     readonly role: Role
 }
