@@ -29,12 +29,7 @@
         const action = state.area.actions.find((action) => action.position === position)
 
         if (action != null) {
-            const success = gameStore.sendMove(action)
-            if (!success) {
-                // TODO: toast on error
-                console.warn(`Unable to send game move!`)
-                console.warn(`${JSON.stringify(action)}`)
-            }
+            gameStore.sendMove(action)
         }
     }
 

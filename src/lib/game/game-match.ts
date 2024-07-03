@@ -2,11 +2,12 @@
 
 import type { Room } from 'colyseus.js'
 import { EventEmitter } from 'eventemitter3'
+import type { GameClient } from './game-client'
 
 // #region Client messages
 
-export const SeatRequestMessageType = 'seat-request'
-export interface SeatRequestPayload {}
+export const MatchAskMessageType = 'match-ask'
+export interface MatchAskPayload {}
 
 export const GameMoveMessageType = 'game-move'
 export interface GameMovePayload<Action = unknown> {
@@ -26,21 +27,16 @@ export interface GameEndedPayload {}
 // #endregion
 
 export class GameMatch<State> {
+    #client: GameClient
     #room: Room<State>
     #events: EventEmitter
 
-    constructor(room: Room<State>) {
+    constructor(client: GameClient, room: Room<State>) {
+        this.#client = client
         this.#room = room
         this.#events = new EventEmitter()
 
-        this.#room.onMessage('game-started', this.emit.bind(this, 'game-started'))
-        this.#room.onMessage('game-ended', this.emit.bind(this, 'game-ended'))
-        this.#room.onStateChange(this.emit.bind(this, 'state-changed'))
-
-        this.#room.onError(this.emit.bind(this, 'error'))
-        this.#room.onLeave(this.emit.bind(this, 'leave'))
-
-        this.on('leave', this.onLeave.bind(this))
+        this.subscribeEvents()
     }
 
     get roomId(): string {
@@ -59,7 +55,7 @@ export class GameMatch<State> {
         return this.#room.state
     }
 
-    sendMessage(type: 'match-seat-request', payload: SeatRequestPayload): void
+    sendMessage(type: 'match-ask', payload: MatchAskPayload): void
     sendMessage(type: 'game-move', payload: GameMovePayload): void
     sendMessage<T>(type: string, message?: T): void {
         this.#room.send(type, message)
@@ -69,8 +65,8 @@ export class GameMatch<State> {
         return await this.#room.leave(consented)
     }
 
-    on(type: 'game-started', callback: () => void): void
-    on(type: 'game-ended', callback: () => void): void
+    on(type: 'game-started', callback: (payload: GameStartedPayload) => void): void
+    on(type: 'game-ended', callback: (payload: GameEndedPayload) => void): void
     on(type: 'state-changed', callback: (state: State) => void): void
     on(type: 'error', callback: (code: number, message?: string) => void): void
     on(type: 'leave', callback: (code: number) => void): void
@@ -79,8 +75,8 @@ export class GameMatch<State> {
         this.#events.on(type, callback)
     }
 
-    off(type: 'game-started', callback: () => void): void
-    off(type: 'game-ended', callback: () => void): void
+    off(type: 'game-started', callback: (payload: GameStartedPayload) => void): void
+    off(type: 'game-ended', callback: (payload: GameEndedPayload) => void): void
     off(type: 'state-changed', callback: (state: State) => void): void
     off(type: 'error', callback: (code: number, message?: string) => void): void
     off(type: 'leave', callback: (code: number) => void): void
@@ -93,7 +89,28 @@ export class GameMatch<State> {
         this.#events.emit(type, ...args)
     }
 
-    private onLeave(): void {
+    private subscribeEvents(): void {
+        this.#room.onMessage(GameStartedMessageType, this.emit.bind(this, 'game-started'))
+        this.#room.onMessage(GameEndedMessageType, this.emit.bind(this, 'game-ended'))
+        this.#room.onStateChange(this.emit.bind(this, 'state-changed'))
+
+        this.#room.onError(this.emit.bind(this, 'error'))
+        this.#room.onLeave(this.onLeave.bind(this))
+    }
+
+    private async onLeave(code: number): Promise<void> {
+        if (code !== 4000) {
+            const match = await this.#client.reconnect<State>(this.#room.reconnectionToken)
+            this.#client = match.#client
+            this.#room = match.#room
+
+            this.subscribeEvents()
+
+            return
+        }
+
         this.#room.removeAllListeners()
+
+        this.emit('leave', code)
     }
 }

@@ -15,11 +15,16 @@ export class GameClient {
 
     async findMatch<State>(name: string): Promise<GameMatch<State>> {
         const room = await this.#client.joinOrCreate<State>(name)
-        return new GameMatch(room)
+        return new GameMatch(this, room)
     }
 
     async joinMatch<State>(roomId: string): Promise<GameMatch<State>> {
         const room = await this.#client.joinById<State>(roomId)
-        return new GameMatch(room)
+        return new GameMatch(this, room)
+    }
+
+    async reconnect<State>(token: string): Promise<GameMatch<State>> {
+        const room = await this.#client.reconnect<State>(token)
+        return new GameMatch(this, room)
     }
 }

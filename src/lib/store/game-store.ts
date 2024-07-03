@@ -18,7 +18,7 @@ export interface GameStore<State> extends Readable<StoreState<State>> {
 
     findMatch(roomId?: string): Promise<void>
 
-    sendMove(action: GameAction): boolean
+    sendMove(action: GameAction): void
 }
 
 export const createGameStore = <State>(name: string, initialState: State): GameStore<State> => {
@@ -61,8 +61,6 @@ export const createGameStore = <State>(name: string, initialState: State): GameS
                 match = await client.findMatch(name)
             }
 
-            match.sendMessage('match-seat-request', {})
-
             match.on('game-started', () => {
                 update((state) => ({
                     ...state,
@@ -72,6 +70,7 @@ export const createGameStore = <State>(name: string, initialState: State): GameS
             match.on('game-ended', async () => {
                 if (match != null) {
                     await match.leave()
+                    match = null
                 }
             })
             match.on('state-changed', (matchState) =>
@@ -80,7 +79,7 @@ export const createGameStore = <State>(name: string, initialState: State): GameS
                     state: matchState.toJSON()
                 }))
             )
-            match.on('leave', () => (match = null))
+            match.sendMessage('match-ask', {})
 
             update((state) => ({
                 ...state,
@@ -89,12 +88,9 @@ export const createGameStore = <State>(name: string, initialState: State): GameS
             }))
         },
         sendMove: (action) => {
-            if (match == null) {
-                return false
+            if (match != null) {
+                match.sendMessage('game-move', { action })
             }
-
-            match.sendMessage('game-move', { action })
-            return true
         }
     }
 }
