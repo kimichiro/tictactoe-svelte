@@ -26,7 +26,7 @@ export interface GameArea<Action extends GameAction = GameAction> {
     readonly actions: Action[]
 }
 
-export type ConnectionStatus = 'unknown' | 'online'
+export type ConnectionStatus = 'unknown' | 'online' | 'offline'
 export interface Connection {
     readonly status: ConnectionStatus
 }
@@ -36,9 +36,10 @@ export interface TimeDuration {
     readonly seconds: number
 }
 
-export interface GamePlayer {
+export interface Player {
     readonly id: string
     readonly name: string
+    readonly userId: string
     readonly connection: Connection
     readonly remainingTime: TimeDuration
 
@@ -47,28 +48,24 @@ export interface GamePlayer {
 
 export interface GameMove {
     readonly notation: string
-    readonly player: GamePlayer
+    readonly player: Player
 }
 
 export interface GameResult {
     readonly draw: boolean
-    readonly winner: GamePlayer | null
+    readonly winner: Player | null
 }
 
 export interface GameState<
     Area extends GameArea = GameArea,
-    Player extends GamePlayer = GamePlayer,
+    Participant extends Player = Player,
     Move extends GameMove = GameMove,
     Result extends GameResult = GameResult
 > {
-    readonly minPlayers: number
-    readonly maxPlayers: number
-    readonly players: Player[]
-
     readonly area: Area
-    readonly currentTurn: Player | null
-    readonly moves: Move[]
+    readonly participants: Participant[]
+    readonly currentTurn: Participant | null
 
-    readonly started: boolean
+    readonly moves: Move[]
     readonly result: Result | null
 }

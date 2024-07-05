@@ -13,13 +13,10 @@
 
     const gameContext = initGameContext<GameState>({ authToken: data.gameToken })
     const gameStore = gameContext.createStore('tictactoe', {
-        minPlayers: 0,
-        maxPlayers: Infinity,
-        players: [],
         area: { table: {}, actions: [] },
+        participants: [],
         currentTurn: null,
         moves: [],
-        started: false,
         result: null
     })
 

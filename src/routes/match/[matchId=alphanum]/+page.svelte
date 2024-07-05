@@ -3,7 +3,7 @@
 
     import { onMount } from 'svelte'
 
-    import { goto } from '$app/navigation'
+    import { beforeNavigate, goto } from '$app/navigation'
     import { initGameContext } from '$lib/context/game-context'
     import { Position, Role } from '$lib/game/schema/tictactoe'
     import type { GameState } from '$lib/game/schema/tictactoe'
@@ -14,13 +14,10 @@
 
     const gameContext = initGameContext<GameState>({ authToken: data.gameToken })
     const gameStore = gameContext.getStore('tictactoe', {
-        minPlayers: 0,
-        maxPlayers: Infinity,
-        players: [],
         area: { table: {}, actions: [] },
+        participants: [],
         currentTurn: null,
         moves: [],
-        started: false,
         result: null
     })
 
@@ -56,18 +53,6 @@
     const cellB3Action = onCellAction.bind(null, Position.B3)
     const cellC3Action = onCellAction.bind(null, Position.C3)
 
-    let cellA1Actionable = false
-    let cellB1Actionable = false
-    let cellC1Actionable = false
-    let cellA2Actionable = false
-    let cellB2Actionable = false
-    let cellC2Actionable = false
-    let cellA3Actionable = false
-    let cellB3Actionable = false
-    let cellC3Actionable = false
-
-    let userSessionId: string | null = null
-
     onMount(async () => {
         await gameStore.findMatch(data.matchId)
 
@@ -77,11 +62,16 @@
         }
     })
 
+    beforeNavigate(async () => {
+        await gameStore.leaveMatch()
+    })
+
     $: area = $gameStore.state.area
-    $: players = $gameStore.state.players
+    $: players = $gameStore.state.participants
     $: currentTurn = $gameStore.state.currentTurn
     $: result = $gameStore.state.result
 
+    $: userSessionId = $gameStore.sessionId
     $: currentPlayer = players.find(({ id }) => id === userSessionId)
 
     $: indicatorTitle = ' '
@@ -101,14 +91,20 @@
     $: cellB3Mark = area.table[Position.B3] ?? ' '
     $: cellC3Mark = area.table[Position.C3] ?? ' '
 
+    $: cellA1Actionable = false
+    $: cellB1Actionable = false
+    $: cellC1Actionable = false
+    $: cellA2Actionable = false
+    $: cellB2Actionable = false
+    $: cellC2Actionable = false
+    $: cellA3Actionable = false
+    $: cellB3Actionable = false
+    $: cellC3Actionable = false
+
     $: isYourTurn = currentTurn?.id != null && currentTurn.id === userSessionId
     $: isGameEnded = result?.draw != null || result?.winner != null
 
     $: {
-        userSessionId = $gameStore.sessionId
-
-        isYourTurn = currentTurn?.id != null && currentTurn.id === userSessionId
-
         indicatorTitle = ' '
         if (currentTurn?.id != null && userSessionId != null) {
             if (currentTurn.id === userSessionId) {
